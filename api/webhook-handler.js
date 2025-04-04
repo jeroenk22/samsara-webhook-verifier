@@ -3,9 +3,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Importeer de benodigde modules
-import { createHmac } from "crypto";
 import express from "express";
 import bodyParser from "body-parser";
+import { createHmac } from "crypto";
 import fetch from "node-fetch";
 
 // Maak een nieuwe Express-applicatie
@@ -33,7 +33,7 @@ const secret = Buffer.from(secretKey, "base64");
 app.use(bodyParser.raw({ type: "application/json" }));
 
 // POST route voor het ontvangen van webhook-verzoeken
-app.post("/webhook-handler", (req, res) => {
+app.post("/api/webhook-handler", (req, res) => {
   console.log("Received POST request to /api/webhook-handler");
 
   // Log de headers van het verzoek om te controleren of alles goed wordt verzonden
@@ -78,11 +78,8 @@ app.post("/webhook-handler", (req, res) => {
     },
     body: JSON.stringify(body),
   })
-    .then((response) => {
-      console.log("Data forwarded to Make.com");
-      return response.json();
-    })
-    .then((data) => res.status(200).send("Successfully forwarded to Make.com"))
+    .then((response) => response.json())
+    .then(() => res.status(200).send("Successfully forwarded to Make.com"))
     .catch((err) => {
       console.error("Error forwarding data:", err);
       res.status(500).send("Failed to forward data");
