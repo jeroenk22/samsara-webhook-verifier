@@ -81,6 +81,9 @@ app.post("/api/webhook-handler", (req, res) => {
 
   console.log("Signature matched, processing event");
 
+  // Log de volledige body van het verzoek om te zien wat er precies binnenkomt
+  console.log("Full request body:", body);
+
   // Filter op basis van eventType (GeofenceEntry of GeofenceExit)
   const allowedEventTypes = ["GeofenceEntry", "GeofenceExit"];
 
