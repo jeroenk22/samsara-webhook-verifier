@@ -7,6 +7,10 @@ import express from "express";
 import bodyParser from "body-parser";
 import { createHmac } from "crypto";
 import fetch from "node-fetch";
+import fs from "fs";
+
+// Laad de whitelist van IP-adressen uit het whitelist.json bestand
+const whitelist = JSON.parse(fs.readFileSync("whitelist.json", "utf-8"));
 
 // Maak een nieuwe Express-applicatie
 const app = express();
@@ -34,14 +38,22 @@ app.use(bodyParser.raw({ type: "application/json" }));
 
 // POST route voor het ontvangen van webhook-verzoeken
 app.post("/api/webhook-handler", (req, res) => {
-  console.log("Received POST request to /api/webhook-handler");
+  // Haal het IP adres op uit de request headers
+  const clientIp =
+    req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  console.log("Client IP:", clientIp);
 
-  // Log de headers van het verzoek om te controleren of alles goed wordt verzonden
-  console.log("Headers:", req.headers);
+  // Controleer of het IP adres in de whitelist staat
+  if (!whitelist.whitelisted_ips.includes(clientIp)) {
+    console.log("IP address is not whitelisted:", clientIp);
+    return res.status(403).send("Forbidden: IP not whitelisted");
+  }
+
+  console.log("IP address is whitelisted, processing request");
 
   const timestamp = req.headers["x-samsara-timestamp"];
   const samsaraSignature = req.headers["x-samsara-signature"];
-  const body = req.body.toString(); // Zorg ervoor dat de body als string wordt behandeld
+  const body = req.body;
 
   // Zorg ervoor dat de vereiste headers aanwezig zijn
   if (!timestamp || !samsaraSignature) {
@@ -53,7 +65,7 @@ app.post("/api/webhook-handler", (req, res) => {
   console.log("Samsara Signature:", samsaraSignature);
 
   // Maak het bericht voor HMAC SHA-256
-  const message = `v1:${timestamp}:${body}`;
+  const message = `v1:${timestamp}:${body.toString()}`;
   console.log("Message to sign:", message);
 
   // Bereken de verwachte handtekening
