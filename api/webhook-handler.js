@@ -83,15 +83,15 @@ app.post("/api/webhook-handler", (req, res) => {
       return response.text(); // Gebruik .text() om de response als tekst op te halen
     })
     .then((data) => {
-      try {
-        // Probeer de response te parseren als JSON
-        const jsonData = JSON.parse(data);
+      console.log("Raw Response Data:", data); // Log de raw response van Make.com
+      // Maak de aanname dat de response een string is
+      if (data === "Accepted") {
         console.log("Successfully forwarded to Make.com");
         res.status(200).send("Successfully forwarded to Make.com");
-      } catch (error) {
-        // Als er een fout is bij het parsen, log het en stuur een foutmelding
-        console.error("Error parsing response data:", error);
-        res.status(500).send("Error parsing Make.com response");
+      } else {
+        // Als de response iets anders is, log dit en stuur een foutmelding
+        console.error("Unexpected response from Make.com:", data);
+        res.status(500).send("Unexpected response from Make.com");
       }
     })
     .catch((err) => {
