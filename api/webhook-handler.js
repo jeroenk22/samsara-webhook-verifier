@@ -81,14 +81,23 @@ app.post("/api/webhook-handler", (req, res) => {
 
   console.log("Signature matched, processing event");
 
+  // Converteer de buffer naar een string en parse de JSON
+  let parsedBody;
+  try {
+    parsedBody = JSON.parse(body.toString());
+  } catch (error) {
+    console.log("Error parsing JSON body:", error);
+    return res.status(400).send("Invalid JSON body");
+  }
+
   // Log de volledige body van het verzoek om te zien wat er precies binnenkomt
-  console.log("Full request body:", body);
+  console.log("Full request body:", parsedBody);
 
   // Filter op basis van eventType (GeofenceEntry of GeofenceExit)
   const allowedEventTypes = ["GeofenceEntry", "GeofenceExit"];
 
   // Controleer of eventType bestaat voordat je trim() aanroept
-  const eventType = body.eventType ? body.eventType.trim() : "";
+  const eventType = parsedBody.eventType ? parsedBody.eventType.trim() : "";
 
   // Log de waarde van eventType voor debugging
   console.log("Received eventType:", eventType);
@@ -108,7 +117,7 @@ app.post("/api/webhook-handler", (req, res) => {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(JSON.parse(body)), // Converteer de body naar JSON
+    body: JSON.stringify(parsedBody), // Verstuur de geparseerde JSON
   })
     .then((response) => {
       console.log("Response Status:", response.status);
