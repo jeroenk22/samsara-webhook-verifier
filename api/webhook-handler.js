@@ -7,10 +7,12 @@ import express from "express";
 import bodyParser from "body-parser";
 import { createHmac } from "crypto";
 import fetch from "node-fetch";
-import fs from "fs";
+import fs from "fs"; // Dit gebruiken we om het whitelist bestand in te laden
+import path from "path"; // Voor het correct omgaan met het pad naar het whitelist bestand
 
-// Laad de whitelist van IP-adressen uit het whitelist.json bestand
-const whitelist = JSON.parse(fs.readFileSync("whitelist.json", "utf-8"));
+// Laad de whitelist van IP-adressen uit het whitelist.json bestand in de root van het project
+const whitelistPath = path.resolve("whitelist.json"); // Resolving het pad naar de root
+const whitelist = JSON.parse(fs.readFileSync(whitelistPath, "utf-8")); // Leest het bestand uit
 
 // Maak een nieuwe Express-applicatie
 const app = express();
@@ -23,6 +25,7 @@ const secretKey = process.env.SECRET_KEY; // De geheime sleutel voor de handteke
 // Log de omgevingsvariabelen om te controleren of ze goed geladen zijn
 console.log("Webhook URL:", webhookUrl);
 console.log("SECRET_KEY:", secretKey); // Controleer of SECRET_KEY goed geladen wordt
+console.log("Whitelisted IPs:", whitelist.whitelisted_ips); // Controleer of de IPs goed geladen worden
 
 // Als SECRET_KEY niet geladen is, stop de server met een foutmelding
 if (!secretKey) {
