@@ -65,7 +65,7 @@ app.post("/api/webhook-handler", (req, res) => {
   // Vergelijk de handtekeningen
   if (expectedSignature !== samsaraSignature) {
     console.log("Signature mismatch");
-    return res.status(400).send("Signature mismatch!");
+    return res.status(400).send("Signature mismatch");
   }
 
   console.log("Signature matched, forwarding data to Make.com webhook");
@@ -78,9 +78,24 @@ app.post("/api/webhook-handler", (req, res) => {
     },
     body: JSON.stringify(body),
   })
-    .then((response) => response.json())
-    .then(() => res.status(200).send("Successfully forwarded to Make.com"))
+    .then((response) => {
+      console.log("Response Status:", response.status); // Log de status van de response
+      return response.text(); // Gebruik .text() om de response als tekst op te halen
+    })
+    .then((data) => {
+      try {
+        // Probeer de response te parseren als JSON
+        const jsonData = JSON.parse(data);
+        console.log("Successfully forwarded to Make.com");
+        res.status(200).send("Successfully forwarded to Make.com");
+      } catch (error) {
+        // Als er een fout is bij het parsen, log het en stuur een foutmelding
+        console.error("Error parsing response data:", error);
+        res.status(500).send("Error parsing Make.com response");
+      }
+    })
     .catch((err) => {
+      // Log eventuele fouten bij het versturen van de data naar Make.com
       console.error("Error forwarding data:", err);
       res.status(500).send("Failed to forward data");
     });
