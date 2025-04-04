@@ -84,8 +84,9 @@ app.post("/api/webhook-handler", (req, res) => {
   // Filter op basis van eventType (GeofenceEntry of GeofenceExit)
   const allowedEventTypes = ["GeofenceEntry", "GeofenceExit"];
 
-  // Strip eventuele extra spaties en controleer hoofdlettergevoeligheid
-  const eventType = body.eventType.trim();
+  // Controleer of eventType bestaat voordat je trim() aanroept
+  const eventType = body.eventType ? body.eventType.trim() : "";
+
   if (!allowedEventTypes.includes(eventType)) {
     console.log(
       `Skipping event, eventType is ${eventType}, which is neither GeofenceEntry nor GeofenceExit`
