@@ -65,7 +65,7 @@ app.post("/api/webhook-handler", (req, res) => {
   // Vergelijk de handtekeningen
   if (expectedSignature !== samsaraSignature) {
     console.log("Signature mismatch");
-    return res.status(400).send("Signature mismatch");
+    return res.status(400).send("Signature mismatch!");
   }
 
   console.log("Signature matched, forwarding data to Make.com webhook");
