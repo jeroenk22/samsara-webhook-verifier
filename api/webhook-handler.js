@@ -23,7 +23,7 @@ app.use(bodyParser.raw({ type: "application/json" }));
 
 // Debugging: Log wanneer de server een verzoek ontvangt
 app.post("/webhook-handler", (req, res) => {
-  console.log("Received POST request to /api");
+  console.log("Received POST request to /api/webhook-handler");
 
   // Log de headers om te controleren of de benodigde headers aanwezig zijn
   console.log("Headers:", req.headers);
