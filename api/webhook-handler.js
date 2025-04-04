@@ -1,18 +1,33 @@
-import { createHmac } from "crypto"; // HMAC SHA-256 van crypto importeren
+// Laad de omgevingsvariabelen uit het .env bestand
+import dotenv from "dotenv";
+dotenv.config();
+
+// Importeer de benodigde modules
+import { createHmac } from "crypto";
 import express from "express";
 import bodyParser from "body-parser";
-import fetch from "node-fetch"; // Gebruik import in plaats van require
+import fetch from "node-fetch";
 
+// Maak een nieuwe Express-applicatie
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Haal de webhook URL en geheime sleutel uit de omgevingsvariabelen
-const webhookUrl = process.env.WEBHOOK_URL; // Zorg ervoor dat deze goed is ingesteld in .env
-const secret = Buffer.from(process.env.SECRET_KEY, "base64"); // Zorg ervoor dat SECRET_KEY goed is ingesteld in .env
+// Laad de omgevingsvariabelen
+const webhookUrl = process.env.WEBHOOK_URL; // De URL van de Make.com webhook
+const secretKey = process.env.SECRET_KEY; // De geheime sleutel voor de handtekeningcontrole
 
-// Log de webhook URL en geheime sleutel (deze regels kunnen in productie verwijderd worden)
+// Log de omgevingsvariabelen om te controleren of ze goed geladen zijn
 console.log("Webhook URL:", webhookUrl);
-console.log("Decoded secret key:", secret);
+console.log("SECRET_KEY:", secretKey); // Controleer of SECRET_KEY goed geladen wordt
+
+// Als SECRET_KEY niet geladen is, stop de server met een foutmelding
+if (!secretKey) {
+  console.error("Error: SECRET_KEY is not set in the .env file");
+  process.exit(1); // Stop de server als de SECRET_KEY ontbreekt
+}
+
+// Decodeer de geheime sleutel van Base64
+const secret = Buffer.from(secretKey, "base64");
 
 // Stel de server in om inkomende verzoeken te verwerken
 app.use(bodyParser.raw({ type: "application/json" }));
