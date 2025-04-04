@@ -41,7 +41,7 @@ app.post("/api/webhook-handler", (req, res) => {
 
   const timestamp = req.headers["x-samsara-timestamp"];
   const samsaraSignature = req.headers["x-samsara-signature"];
-  const body = req.body;
+  const body = req.body.toString(); // Zorg ervoor dat de body als string wordt behandeld
 
   // Zorg ervoor dat de vereiste headers aanwezig zijn
   if (!timestamp || !samsaraSignature) {
@@ -53,7 +53,7 @@ app.post("/api/webhook-handler", (req, res) => {
   console.log("Samsara Signature:", samsaraSignature);
 
   // Maak het bericht voor HMAC SHA-256
-  const message = `v1:${timestamp}:${body.toString()}`;
+  const message = `v1:${timestamp}:${body}`;
   console.log("Message to sign:", message);
 
   // Bereken de verwachte handtekening
@@ -70,13 +70,16 @@ app.post("/api/webhook-handler", (req, res) => {
 
   console.log("Signature matched, forwarding data to Make.com webhook");
 
-  // Handtekening is geldig, stuur door naar Make.com Webhook
+  // Converteer de body naar JSON voordat we deze doorsturen
+  const jsonBody = JSON.parse(body);
+
+  // Handtekening is geldig, stuur de data door naar Make.com Webhook
   fetch(webhookUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(jsonBody), // Zorg ervoor dat de body als JSON wordt doorgegeven
   })
     .then((response) => {
       console.log("Response Status:", response.status); // Log de status van de response
