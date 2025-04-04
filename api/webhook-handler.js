@@ -79,18 +79,27 @@ app.post("/api/webhook-handler", (req, res) => {
     return res.status(400).send("Signature mismatch");
   }
 
-  console.log("Signature matched, forwarding data to Make.com webhook");
+  console.log("Signature matched, processing event");
 
-  // Converteer de body naar JSON voordat we deze doorsturen
-  const jsonBody = JSON.parse(body);
+  // Filter op basis van eventType (GeofenceEntry of GeofenceExit)
+  const allowedEventTypes = ["GeofenceEntry", "GeofenceExit"];
 
-  // Handtekening is geldig, stuur de data door naar Make.com Webhook
+  if (!allowedEventTypes.includes(body.eventType)) {
+    console.log(
+      "Skipping event, eventType is neither GeofenceEntry nor GeofenceExit"
+    );
+    return res.status(200).send("Event skipped");
+  }
+
+  console.log(`EventType is ${body.eventType}, forwarding data to Make.com`);
+
+  // Verzend de data naar Make.com Webhook
   fetch(webhookUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(jsonBody),
+    body: JSON.stringify(JSON.parse(body)), // Converteer de body naar JSON
   })
     .then((response) => {
       console.log("Response Status:", response.status);
