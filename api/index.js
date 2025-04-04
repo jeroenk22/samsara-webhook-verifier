@@ -1,8 +1,7 @@
-require("dotenv").config(); // Laad omgevingsvariabelen uit het .env bestand
-const express = require("express");
-const bodyParser = require("body-parser");
-const crypto = require("crypto");
-const fetch = require("node-fetch");
+import { createHmac } from "crypto"; // HMAC SHA-256 van crypto importeren
+import express from "express";
+import bodyParser from "body-parser";
+import fetch from "node-fetch"; // Gebruik import in plaats van require
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -30,7 +29,7 @@ app.post("/webhook-url", (req, res) => {
   const message = `v1:${timestamp}:${body.toString()}`;
 
   // Bereken de verwachte handtekening
-  const hmac = crypto.createHmac("sha256", secret);
+  const hmac = createHmac("sha256", secret);
   hmac.update(message);
   const expectedSignature = "v1=" + hmac.digest("hex");
 
