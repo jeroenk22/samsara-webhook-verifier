@@ -84,14 +84,16 @@ app.post("/api/webhook-handler", (req, res) => {
   // Filter op basis van eventType (GeofenceEntry of GeofenceExit)
   const allowedEventTypes = ["GeofenceEntry", "GeofenceExit"];
 
-  if (!allowedEventTypes.includes(body.eventType)) {
+  // Strip eventuele extra spaties en controleer hoofdlettergevoeligheid
+  const eventType = body.eventType.trim();
+  if (!allowedEventTypes.includes(eventType)) {
     console.log(
-      "Skipping event, eventType is neither GeofenceEntry nor GeofenceExit"
+      `Skipping event, eventType is ${eventType}, which is neither GeofenceEntry nor GeofenceExit`
     );
     return res.status(200).send("Event skipped");
   }
 
-  console.log(`EventType is ${body.eventType}, forwarding data to Make.com`);
+  console.log(`EventType is ${eventType}, forwarding data to Make.com`);
 
   // Verzend de data naar Make.com Webhook
   fetch(webhookUrl, {
