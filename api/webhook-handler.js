@@ -6,26 +6,22 @@ import fetch from "node-fetch"; // Gebruik import in plaats van require
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Haal de webhook URL uit de omgevingsvariabelen
-const webhookUrl = process.env.WEBHOOK_URL;
+// Haal de webhook URL en geheime sleutel uit de omgevingsvariabelen
+const webhookUrl = process.env.WEBHOOK_URL; // Zorg ervoor dat deze goed is ingesteld in .env
+const secret = Buffer.from(process.env.SECRET_KEY, "base64"); // Zorg ervoor dat SECRET_KEY goed is ingesteld in .env
 
-// Log de webhook URL om te bevestigen dat het goed geladen wordt
+// Log de webhook URL en geheime sleutel (deze regels kunnen in productie verwijderd worden)
 console.log("Webhook URL:", webhookUrl);
-
-// Decodeer de geheime sleutel van Base64
-const secret = Buffer.from(process.env.SECRET_KEY, "base64");
-
-// Log de geheime sleutel (in principe als een buffer, dit zou je niet in productie willen loggen)
 console.log("Decoded secret key:", secret);
 
 // Stel de server in om inkomende verzoeken te verwerken
 app.use(bodyParser.raw({ type: "application/json" }));
 
-// Debugging: Log wanneer de server een verzoek ontvangt
+// POST route voor het ontvangen van webhook-verzoeken
 app.post("/webhook-handler", (req, res) => {
   console.log("Received POST request to /api/webhook-handler");
 
-  // Log de headers om te controleren of de benodigde headers aanwezig zijn
+  // Log de headers van het verzoek om te controleren of alles goed wordt verzonden
   console.log("Headers:", req.headers);
 
   const timestamp = req.headers["x-samsara-timestamp"];
