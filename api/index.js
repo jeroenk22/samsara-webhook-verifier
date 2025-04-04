@@ -15,7 +15,8 @@ const secret = Buffer.from(process.env.SECRET_KEY, "base64");
 // Stel de server in om inkomende verzoeken te verwerken
 app.use(bodyParser.raw({ type: "application/json" }));
 
-app.post("/webhook-url", (req, res) => {
+// Verander de route hier naar de root van de API
+app.post("/", (req, res) => {
   const timestamp = req.headers["x-samsara-timestamp"];
   const samsaraSignature = req.headers["x-samsara-signature"];
   const body = req.body;
