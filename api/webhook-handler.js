@@ -1,49 +1,46 @@
 import express from "express";
 import bodyParser from "body-parser";
-import { verifySamsaraSignature } from "./verifySignature.js"; // Import signature verification
-import { getConfig, getWhitelist, isIpWhitelisted } from "./webhookUtils.js"; // Import utility functions
-import { processWebhook } from "./webhookProcessor.js"; // Import webhook processing logic
-
-// Load environment variables from .env file
+import { verifySamsaraSignature } from "./verifySignature.js"; // Importeer de handtekening verificatie
+import { getConfig, getWhitelist, isIpWhitelisted } from "./webhookUtils.js"; // Importeer utility-functies
+import { processWebhook } from "./webhookProcessor.js"; // Importeer de webhookverwerkingslogica
 import dotenv from "dotenv";
+
 dotenv.config();
 
-// Create new Express app
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Load config and whitelist
+// Laad de config en whitelist
 const config = getConfig();
 const whitelist = getWhitelist();
 
-// Load Webhook URLs from .env
-const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
-const iftttWebhookUrl = process.env.IFTTT_WEBHOOK_URL;
+// Laad de Webhook URL's uit de .env
+const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL; // Make.com webhook URL
+const iftttWebhookUrl = process.env.IFTTT_WEBHOOK_URL; // IFTTT webhook URL
 const secretKey = process.env.SECRET_KEY;
 
-// Log important settings without sensitive data (SECRET_KEY)
+// Log de belangrijke instellingen zonder gevoelige data (SECRET_KEY)
 console.log("Webhook URL for Make.com:", makeWebhookUrl);
 console.log("Webhook URL for IFTTT:", iftttWebhookUrl);
 
-// If SECRET_KEY is not loaded, stop the server with an error message
+// Als SECRET_KEY niet geladen is, stop de server met een foutmelding
 if (!secretKey) {
   console.error("Error: SECRET_KEY is not set in the .env file");
   process.exit(1);
 }
 
-// Decode the secret key from Base64
+// Decodeer de geheime sleutel van Base64
 const secret = Buffer.from(secretKey, "base64");
 
-// Set up server to process incoming requests
+// Stel de server in om inkomende verzoeken te verwerken
 app.use(bodyParser.raw({ type: "application/json" }));
 
-// POST route to receive webhook requests
+// POST route voor het ontvangen van webhook-verzoeken
 app.post("/api/webhook-handler", (req, res) => {
-  // Get the IP address from the request headers
   const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
   console.log("Client IP:", clientIp);
 
-  // Check if the IP address is in the whitelist
+  // Controleer of het IP adres in de whitelist staat
   if (!isIpWhitelisted(clientIp, whitelist)) {
     console.log("IP address is not whitelisted:", clientIp);
     return res.status(403).send("Forbidden: IP not whitelisted");
@@ -55,7 +52,7 @@ app.post("/api/webhook-handler", (req, res) => {
   const samsaraSignature = req.headers["x-samsara-signature"];
   const body = req.body;
 
-  // Check if the required headers are present
+  // Zorg ervoor dat de vereiste headers aanwezig zijn
   if (!timestamp || !samsaraSignature) {
     console.log("Missing signature or timestamp in the request");
     return res.status(400).send("Missing signature or timestamp");
@@ -63,25 +60,22 @@ app.post("/api/webhook-handler", (req, res) => {
 
   console.log("Timestamp:", timestamp);
 
-  // Create the message to sign
-  const message = `v1:${timestamp}:${body.toString()}`;
-  console.log("Message to sign:", message);
+  // Verifieer de handtekening
+  const isSignatureValid = verifySamsaraSignature(
+    process.env.SECRET_KEY,
+    timestamp,
+    body,
+    samsaraSignature
+  );
 
-  // Calculate the expected signature
-  const hmac = createHmac("sha256", secret);
-  hmac.update(message);
-  const expectedSignature = "v1=" + hmac.digest("hex");
-  console.log("Expected signature:", expectedSignature);
-
-  // Compare the signatures
-  if (expectedSignature !== samsaraSignature) {
+  if (!isSignatureValid) {
     console.log("Signature mismatch");
     return res.status(400).send("Signature mismatch");
   }
 
   console.log("Signature matched, processing event");
 
-  // Parse the body into JSON
+  // Converteer de buffer naar een string en parse de JSON
   let parsedBody;
   try {
     parsedBody = JSON.parse(body.toString());
@@ -90,10 +84,10 @@ app.post("/api/webhook-handler", (req, res) => {
     return res.status(400).send("Invalid JSON body");
   }
 
-  // Log the full request body to see what is coming in
+  // Log de volledige body van het verzoek om te zien wat er precies binnenkomt
   console.log("Full request body:", parsedBody);
 
-  // Filter based on eventType (GeofenceEntry or GeofenceExit)
+  // Filter op basis van eventType (GeofenceEntry of GeofenceExit)
   const allowedEventTypes = ["GeofenceEntry", "GeofenceExit"];
   const eventType = parsedBody.eventType ? parsedBody.eventType.trim() : "";
   console.log("Received eventType:", eventType);
@@ -107,47 +101,21 @@ app.post("/api/webhook-handler", (req, res) => {
 
   console.log(`EventType is ${eventType}, forwarding data`);
 
-  // Choose which webhook(s) to send based on the config
-  const webhookUrls = [];
+  // Verwerk het event en stuur naar de juiste webhook(s)
+  const responseData = processWebhook(
+    config,
+    eventType,
+    parsedBody,
+    makeWebhookUrl,
+    iftttWebhookUrl
+  );
 
-  if (config.webhookChoice === "make" || config.webhookChoice === "both") {
-    webhookUrls.push(makeWebhookUrl); // Add Make.com URL
-  }
+  console.log("Response Data:", responseData);
 
-  if (config.webhookChoice === "ifttt" || config.webhookChoice === "both") {
-    webhookUrls.push(iftttWebhookUrl); // Add IFTTT URL
-  }
-
-  // Send the message to the selected webhooks
-  Promise.all(
-    webhookUrls.map((url) =>
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsedBody),
-      })
-    )
-  )
-    .then((responses) => {
-      responses.forEach((response, index) => {
-        console.log(
-          `Webhook ${webhookUrls[index]} responded with status: ${response.status}`
-        );
-        response
-          .text()
-          .then((data) =>
-            console.log(`Response from ${webhookUrls[index]}: ${data}`)
-          );
-      });
-      res.status(200).send("Event successfully processed");
-    })
-    .catch((err) => {
-      console.error("Error forwarding data:", err);
-      res.status(500).send("Failed to forward data");
-    });
+  return res.status(200).send("Event successfully processed");
 });
 
-// Start the server
+// Start de server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });

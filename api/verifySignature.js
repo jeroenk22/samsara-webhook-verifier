@@ -7,8 +7,8 @@ export const verifySamsaraSignature = (
   body,
   samsaraSignature
 ) => {
-  // Maak de boodschap die ondertekend moet worden exact zoals het ontvangen is
-  const message = `v1:${timestamp}:${body.toString()}`;
+  // Bouw het bericht voor de handtekening
+  const message = `v1:${timestamp}:${body}`;
   console.log("Message to sign:", message); // Log het bericht dat je gaat ondertekenen
 
   // Maak een HMAC aan met de geheime sleutel
@@ -21,6 +21,7 @@ export const verifySamsaraSignature = (
 
   // Vergelijk de handtekeningen
   const isSignatureValid = expectedSignature === samsaraSignature;
+
   console.log("Received signature:", samsaraSignature); // Log de ontvangen handtekening
   console.log("Signature valid:", isSignatureValid); // Log het resultaat van de vergelijking
 

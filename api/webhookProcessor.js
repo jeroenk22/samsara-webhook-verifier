@@ -11,58 +11,30 @@ export const processWebhook = (
 ) => {
   let responseData = "";
 
-  // Gebruik switch om de juiste webhook(s) aan te roepen op basis van de config
-  switch (config.webhookChoice) {
-    case "make":
-      console.log("Sending data to Make.com webhook...");
-      sendToMakeWebhook(makeWebhookUrl, parsedBody)
-        .then((data) => {
-          responseData += `Make.com response: ${data}\n`;
-        })
-        .catch((error) => {
-          console.error("Error forwarding to Make.com:", error);
-          responseData += `Error forwarding to Make.com: ${error.message}\n`;
-        });
-      break;
+  // Verzend naar Make.com als de configuratie 'make' of 'both' is
+  if (config.webhookChoice === "make" || config.webhookChoice === "both") {
+    console.log("Sending data to Make.com webhook...");
+    sendToMakeWebhook(makeWebhookUrl, parsedBody)
+      .then((data) => {
+        responseData += `Make.com response: ${data}\n`;
+      })
+      .catch((error) => {
+        console.error("Error forwarding to Make.com:", error);
+        responseData += `Error forwarding to Make.com: ${error.message}\n`;
+      });
+  }
 
-    case "ifttt":
-      console.log("Sending data to IFTTT webhook...");
-      sendToIftttWebhook(iftttWebhookUrl, parsedBody)
-        .then((data) => {
-          responseData += `IFTTT response: ${data}\n`;
-        })
-        .catch((error) => {
-          console.error("Error forwarding to IFTTT:", error);
-          responseData += `Error forwarding to IFTTT: ${error.message}\n`;
-        });
-      break;
-
-    case "both":
-      console.log("Sending data to both Make.com and IFTTT webhooks...");
-      // Eerst naar Make.com
-      sendToMakeWebhook(makeWebhookUrl, parsedBody)
-        .then((data) => {
-          responseData += `Make.com response: ${data}\n`;
-        })
-        .catch((error) => {
-          console.error("Error forwarding to Make.com:", error);
-          responseData += `Error forwarding to Make.com: ${error.message}\n`;
-        });
-
-      // Dan naar IFTTT
-      sendToIftttWebhook(iftttWebhookUrl, parsedBody)
-        .then((data) => {
-          responseData += `IFTTT response: ${data}\n`;
-        })
-        .catch((error) => {
-          console.error("Error forwarding to IFTTT:", error);
-          responseData += `Error forwarding to IFTTT: ${error.message}\n`;
-        });
-      break;
-
-    default:
-      console.log("No valid webhook configuration found.");
-      responseData = "No valid webhook configuration found.";
+  // Verzend naar IFTTT als de configuratie 'ifttt' of 'both' is
+  if (config.webhookChoice === "ifttt" || config.webhookChoice === "both") {
+    console.log("Sending data to IFTTT webhook...");
+    sendToIftttWebhook(iftttWebhookUrl, parsedBody)
+      .then((data) => {
+        responseData += `IFTTT response: ${data}\n`;
+      })
+      .catch((error) => {
+        console.error("Error forwarding to IFTTT:", error);
+        responseData += `Error forwarding to IFTTT: ${error.message}\n`;
+      });
   }
 
   return responseData;
