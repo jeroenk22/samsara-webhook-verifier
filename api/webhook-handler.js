@@ -124,6 +124,9 @@ app.post("/api/webhook-handler", (req, res) => {
     webhookUrls.push(webhookUrlIFTTT); // Voeg IFTTT URL toe
   }
 
+  // Log de actieve webhook-configuratie voordat de request wordt doorgestuurd
+  console.log("Active webhook configuration:", config.webhookChoice);
+
   // Verstuur het bericht naar de geselecteerde webhooks
   Promise.all(
     webhookUrls.map((url) =>
