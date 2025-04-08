@@ -2,15 +2,19 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+// Laad de configuratie uit config.json
+import fs from "fs";
+import path from "path";
+const configPath = path.resolve("config.json");
+const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+
 // Importeer de benodigde modules
 import express from "express";
 import bodyParser from "body-parser";
 import { createHmac } from "crypto";
 import fetch from "node-fetch";
-import fs from "fs";
-import path from "path";
 
-// Laad de whitelist van IP-adressen uit het whitelist.json bestand in de root van het project
+// Laad de whitelist van IP-adressen uit het whitelist.json bestand
 const whitelistPath = path.resolve("whitelist.json");
 const whitelist = JSON.parse(fs.readFileSync(whitelistPath, "utf-8"));
 
@@ -19,11 +23,13 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Laad de omgevingsvariabelen
-const webhookUrl = process.env.WEBHOOK_URL;
+const webhookUrlMake = process.env.MAKE_WEBHOOK_URL; // Make.com webhook URL
+const webhookUrlIFTTT = process.env.IFTTT_WEBHOOK_URL; // IFTTT webhook URL
 const secretKey = process.env.SECRET_KEY;
 
 // Log de belangrijke instellingen zonder gevoelige data (SECRET_KEY)
-console.log("Webhook URL:", webhookUrl);
+console.log("Webhook URL for Make.com:", webhookUrlMake);
+console.log("Webhook URL for IFTTT:", webhookUrlIFTTT);
 
 // Als SECRET_KEY niet geladen is, stop de server met een foutmelding
 if (!secretKey) {
@@ -95,11 +101,7 @@ app.post("/api/webhook-handler", (req, res) => {
 
   // Filter op basis van eventType (GeofenceEntry of GeofenceExit)
   const allowedEventTypes = ["GeofenceEntry", "GeofenceExit"];
-
-  // Controleer of eventType bestaat voordat je trim() aanroept
   const eventType = parsedBody.eventType ? parsedBody.eventType.trim() : "";
-
-  // Log de waarde van eventType voor debugging
   console.log("Received eventType:", eventType);
 
   if (!allowedEventTypes.includes(eventType)) {
@@ -109,29 +111,41 @@ app.post("/api/webhook-handler", (req, res) => {
     return res.status(200).send("Event skipped");
   }
 
-  console.log(`EventType is ${eventType}, forwarding data to Make.com`);
+  console.log(`EventType is ${eventType}, forwarding data`);
 
-  // Verzend de data naar Make.com Webhook
-  fetch(webhookUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(parsedBody), // Verstuur de geparseerde JSON
-  })
-    .then((response) => {
-      console.log("Response Status:", response.status);
-      return response.text(); // Gebruik .text() om de response als tekst op te halen
-    })
-    .then((data) => {
-      console.log("Raw Response Data:", data); // Log de raw response van Make.com
-      if (data === "Accepted") {
-        console.log("Successfully forwarded to Make.com");
-        res.status(200).send("Successfully forwarded to Make.com");
-      } else {
-        console.error("Unexpected response from Make.com:", data);
-        res.status(500).send("Unexpected response from Make.com");
-      }
+  // Kiezen welke webhook(s) door te sturen op basis van de configuratie
+  const webhookUrls = [];
+
+  if (config.webhookChoice === "make" || config.webhookChoice === "both") {
+    webhookUrls.push(webhookUrlMake); // Voeg Make.com URL toe
+  }
+
+  if (config.webhookChoice === "ifttt" || config.webhookChoice === "both") {
+    webhookUrls.push(webhookUrlIFTTT); // Voeg IFTTT URL toe
+  }
+
+  // Verstuur het bericht naar de geselecteerde webhooks
+  Promise.all(
+    webhookUrls.map((url) =>
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsedBody),
+      })
+    )
+  )
+    .then((responses) => {
+      responses.forEach((response, index) => {
+        console.log(
+          `Webhook ${webhookUrls[index]} responded with status: ${response.status}`
+        );
+        response
+          .text()
+          .then((data) =>
+            console.log(`Response from ${webhookUrls[index]}: ${data}`)
+          );
+      });
+      res.status(200).send("Event successfully processed");
     })
     .catch((err) => {
       console.error("Error forwarding data:", err);
