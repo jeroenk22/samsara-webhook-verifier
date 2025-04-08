@@ -2,19 +2,19 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-// Laad de configuratie uit config.json
-import fs from "fs";
-import path from "path";
-const configPath = path.resolve("config.json");
-const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-
 // Importeer de benodigde modules
 import express from "express";
 import bodyParser from "body-parser";
 import { createHmac } from "crypto";
 import fetch from "node-fetch";
+import fs from "fs";
+import path from "path";
 
-// Laad de whitelist van IP-adressen uit het whitelist.json bestand
+// Laad de config uit config.json
+const configPath = path.resolve("config.json");
+const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+
+// Laad de whitelist van IP-adressen uit het whitelist.json bestand in de root van het project
 const whitelistPath = path.resolve("whitelist.json");
 const whitelist = JSON.parse(fs.readFileSync(whitelistPath, "utf-8"));
 
@@ -23,13 +23,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Laad de omgevingsvariabelen
-const webhookUrlMake = process.env.MAKE_WEBHOOK_URL; // Make.com webhook URL
-const webhookUrlIFTTT = process.env.IFTTT_WEBHOOK_URL; // IFTTT webhook URL
+const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
+const iftttWebhookUrl = process.env.IFTTT_WEBHOOK_URL;
 const secretKey = process.env.SECRET_KEY;
-
-// Log de belangrijke instellingen zonder gevoelige data (SECRET_KEY)
-console.log("Webhook URL for Make.com:", webhookUrlMake);
-console.log("Webhook URL for IFTTT:", webhookUrlIFTTT);
 
 // Als SECRET_KEY niet geladen is, stop de server met een foutmelding
 if (!secretKey) {
@@ -101,7 +97,11 @@ app.post("/api/webhook-handler", (req, res) => {
 
   // Filter op basis van eventType (GeofenceEntry of GeofenceExit)
   const allowedEventTypes = ["GeofenceEntry", "GeofenceExit"];
+
+  // Controleer of eventType bestaat voordat je trim() aanroept
   const eventType = parsedBody.eventType ? parsedBody.eventType.trim() : "";
+
+  // Log de waarde van eventType voor debugging
   console.log("Received eventType:", eventType);
 
   if (!allowedEventTypes.includes(eventType)) {
@@ -111,49 +111,60 @@ app.post("/api/webhook-handler", (req, res) => {
     return res.status(200).send("Event skipped");
   }
 
-  console.log(`EventType is ${eventType}, forwarding data`);
+  console.log(`EventType is ${eventType}, forwarding data to webhook(s)`);
 
-  // Kiezen welke webhook(s) door te sturen op basis van de configuratie
-  const webhookUrls = [];
-
+  // Log de actieve config-optie voor debugging
+  let activeWebhookUrl = "";
   if (config.webhookChoice === "make" || config.webhookChoice === "both") {
-    webhookUrls.push(webhookUrlMake); // Voeg Make.com URL toe
+    activeWebhookUrl = makeWebhookUrl; // Zet Make Webhook URL
+    console.log("Active webhook URL: Make.com", activeWebhookUrl);
+    // Stuur naar Make.com
+    fetch(makeWebhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(parsedBody), // Verstuur de geparseerde JSON
+    })
+      .then((response) => response.text())
+      .then((data) => {
+        console.log("Make.com response:", data);
+        if (data === "Accepted") {
+          console.log("Successfully forwarded to Make.com");
+        } else {
+          console.log("Unexpected response from Make.com:", data);
+        }
+      })
+      .catch((error) => console.error("Error forwarding to Make.com:", error));
   }
 
   if (config.webhookChoice === "ifttt" || config.webhookChoice === "both") {
-    webhookUrls.push(webhookUrlIFTTT); // Voeg IFTTT URL toe
+    activeWebhookUrl = iftttWebhookUrl; // Zet IFTTT Webhook URL
+    console.log("Active webhook URL: IFTTT", activeWebhookUrl);
+    // Stuur naar IFTTT
+    fetch(iftttWebhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(parsedBody),
+    })
+      .then((response) => response.text())
+      .then((data) => {
+        console.log("IFTTT response:", data);
+        if (
+          data ===
+          "Congratulations! You've fired the auto_in_wageningen JSON event"
+        ) {
+          console.log("Successfully forwarded to IFTTT");
+        } else {
+          console.log("Unexpected response from IFTTT:", data);
+        }
+      })
+      .catch((error) => console.error("Error forwarding to IFTTT:", error));
   }
 
-  // Log de actieve webhook-configuratie voordat de request wordt doorgestuurd
-  console.log("Active webhook configuration:", config.webhookChoice);
-
-  // Verstuur het bericht naar de geselecteerde webhooks
-  Promise.all(
-    webhookUrls.map((url) =>
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsedBody),
-      })
-    )
-  )
-    .then((responses) => {
-      responses.forEach((response, index) => {
-        console.log(
-          `Webhook ${webhookUrls[index]} responded with status: ${response.status}`
-        );
-        response
-          .text()
-          .then((data) =>
-            console.log(`Response from ${webhookUrls[index]}: ${data}`)
-          );
-      });
-      res.status(200).send("Event successfully processed");
-    })
-    .catch((err) => {
-      console.error("Error forwarding data:", err);
-      res.status(500).send("Failed to forward data");
-    });
+  res.status(200).send("Webhook processed");
 });
 
 // Start de server
