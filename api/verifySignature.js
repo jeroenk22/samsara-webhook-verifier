@@ -7,8 +7,12 @@ export const verifySamsaraSignature = (
   body,
   samsaraSignature
 ) => {
+  // Zorg ervoor dat de body een string is
+  const bodyString = body.toString();
+  console.log("Body string to sign:", bodyString); // Log de body die je gaat ondertekenen
+
   // Bouw het bericht voor de handtekening
-  const message = `v1:${timestamp}:${body}`;
+  const message = `v1:${timestamp}:${bodyString}`;
   console.log("Message to sign:", message); // Log het bericht dat je gaat ondertekenen
 
   // Maak een HMAC aan met de geheime sleutel
