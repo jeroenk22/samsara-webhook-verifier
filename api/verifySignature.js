@@ -6,7 +6,7 @@ export const verifySamsaraSignature = (
   body,
   samsaraSignature
 ) => {
-  const message = `v1:${timestamp}:${body}`;
+  const message = `v1:<span class="math-inline">\{timestamp\}\:</span>{body}`;
   console.log("Message to sign:", message);
 
   const hmac = createHmac("sha256", secret);

@@ -11,7 +11,7 @@ export const processWebhook = async (
   let responseData = "";
 
   try {
-    console.log("Config webhookChoice:", config.webhookChoice);
+    console.log("Config webhookChoice:", config.webhookChoice); // Log de webhookChoice
 
     if (eventType === "GeofenceEntry" || eventType === "GeofenceExit") {
       if (config.webhookChoice === "make") {
@@ -21,6 +21,7 @@ export const processWebhook = async (
           parsedBody
         );
         responseData += `Make.com response: ${makeResponse}\n`;
+        console.log("Make webhook called"); // Add log
       } else if (config.webhookChoice === "ifttt") {
         console.log("Sending data to IFTTT webhook...");
         const iftttResponse = await sendToIftttWebhook(
@@ -28,6 +29,7 @@ export const processWebhook = async (
           parsedBody
         );
         responseData += `IFTTT response: ${iftttResponse}\n`;
+        console.log("IFTTT webhook called"); // Add log
       } else if (config.webhookChoice === "both") {
         console.log("Sending data to Make.com webhook...");
         const makeResponse = await sendToMakeWebhook(
@@ -35,6 +37,7 @@ export const processWebhook = async (
           parsedBody
         );
         responseData += `Make.com response: ${makeResponse}\n`;
+        console.log("Make webhook called"); // Add log
 
         console.log("Sending data to IFTTT webhook...");
         const iftttResponse = await sendToIftttWebhook(
@@ -42,6 +45,7 @@ export const processWebhook = async (
           parsedBody
         );
         responseData += `IFTTT response: ${iftttResponse}\n`;
+        console.log("IFTTT webhook called"); // Add log
       }
     } else {
       console.log(
