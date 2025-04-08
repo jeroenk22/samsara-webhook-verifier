@@ -27,6 +27,10 @@ const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
 const iftttWebhookUrl = process.env.IFTTT_WEBHOOK_URL;
 const secretKey = process.env.SECRET_KEY;
 
+// Log de belangrijke instellingen zonder gevoelige data (SECRET_KEY)
+console.log("Make Webhook URL:", makeWebhookUrl);
+console.log("IFTTT Webhook URL:", iftttWebhookUrl);
+
 // Als SECRET_KEY niet geladen is, stop de server met een foutmelding
 if (!secretKey) {
   console.error("Error: SECRET_KEY is not set in the .env file");
@@ -104,17 +108,19 @@ app.post("/api/webhook-handler", (req, res) => {
   // Log de waarde van eventType voor debugging
   console.log("Received eventType:", eventType);
 
+  // Als het eventType niet geldig is, sla dan de verdere handelingen over
   if (!allowedEventTypes.includes(eventType)) {
     console.log(
       `Skipping event, eventType is ${eventType}, which is neither GeofenceEntry nor GeofenceExit`
     );
-    return res.status(200).send("Event skipped");
+    return res.status(200).send("Event skipped"); // Stop de verdere verwerking
   }
 
   console.log(`EventType is ${eventType}, forwarding data to webhook(s)`);
 
   // Log de actieve config-optie voor debugging
   let activeWebhookUrl = "";
+  let responseData = "";
   if (config.webhookChoice === "make" || config.webhookChoice === "both") {
     activeWebhookUrl = makeWebhookUrl; // Zet Make Webhook URL
     console.log("Active webhook URL: Make.com", activeWebhookUrl);
@@ -134,6 +140,7 @@ app.post("/api/webhook-handler", (req, res) => {
         } else {
           console.log("Unexpected response from Make.com:", data);
         }
+        responseData += `Make.com response: ${data}\n`; // Voeg de Make.com response toe
       })
       .catch((error) => console.error("Error forwarding to Make.com:", error));
   }
@@ -160,11 +167,12 @@ app.post("/api/webhook-handler", (req, res) => {
         } else {
           console.log("Unexpected response from IFTTT:", data);
         }
+        responseData += `IFTTT response: ${data}\n`; // Voeg de IFTTT response toe
       })
       .catch((error) => console.error("Error forwarding to IFTTT:", error));
   }
 
-  res.status(200).send("Webhook processed");
+  res.status(200).send(`Webhook processed: \n${responseData}`);
 });
 
 // Start de server
