@@ -1,23 +1,33 @@
 import { createHmac } from "crypto";
 
 export const verifySamsaraSignature = (
-  secret,
+  secretBase64, // The base64 encoded secret key
   timestamp,
-  body,
+  body, // The raw request body as a string
   samsaraSignature
 ) => {
-  const message = `v1:<span class="math-inline">\{timestamp\}\:</span>{body}`;
-  console.log("Message to sign:", message);
+  try {
+    // Step 1: Decode the secret key
+    const secret = Buffer.from(secretBase64, "base64");
 
-  const hmac = createHmac("sha256", secret);
-  hmac.update(message);
+    // Step 3: Prepare the message for the HMAC SHA-256 algorithm
+    const message = `v1:${timestamp}:${body}`;
+    console.log("Message to sign:", message);
 
-  const expectedSignature = "v1=" + hmac.digest("hex");
-  console.log("Expected signature:", expectedSignature);
-  console.log("Received signature:", samsaraSignature);
+    // Step 4: Determine the expected signature
+    const hmac = createHmac("sha256", secret);
+    hmac.update(message);
+    const expectedSignature = "v1=" + hmac.digest("hex");
+    console.log("Expected signature:", expectedSignature);
+    console.log("Received signature:", samsaraSignature);
 
-  const isSignatureValid = expectedSignature === samsaraSignature;
-  console.log("Signature valid:", isSignatureValid);
+    // Step 5: Compare the signatures
+    const isSignatureValid = expectedSignature === samsaraSignature;
+    console.log("Signature valid:", isSignatureValid);
 
-  return isSignatureValid;
+    return isSignatureValid;
+  } catch (error) {
+    console.error("Error verifying signature:", error);
+    return false; // Return false on error
+  }
 };
