@@ -3,7 +3,7 @@ import path from "path";
 
 // Haal de config op uit het config bestand
 export const getConfig = () => {
-  const configPath = path.resolve("config/config.json");
+  const configPath = path.resolve("config.json");
   return JSON.parse(fs.readFileSync(configPath, "utf-8"));
 };
 
