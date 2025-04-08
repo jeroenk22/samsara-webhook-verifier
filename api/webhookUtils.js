@@ -4,7 +4,9 @@ import path from "path";
 // Haal de config op uit het config bestand
 export const getConfig = () => {
   const configPath = path.resolve("config.json");
-  return JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  console.log("Config webhookChoice:", config.webhookChoice); // Log de webhookChoice
+  return config;
 };
 
 // Haal de whitelist van IP-adressen op

@@ -11,6 +11,8 @@ export const processWebhook = async (
   let responseData = "";
 
   try {
+    console.log("Config webhookChoice:", config.webhookChoice); // Log de webhookChoice
+
     if (eventType === "GeofenceEntry" || eventType === "GeofenceExit") {
       if (config.webhookChoice === "make") {
         console.log("Sending data to Make.com webhook...");
