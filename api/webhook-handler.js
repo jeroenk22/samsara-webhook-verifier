@@ -29,7 +29,6 @@ app.use(bodyParser.raw({ type: "application/json" }));
 
 // POST route voor het ontvangen van webhook-verzoeken
 app.post("/api/webhook-handler", (req, res) => {
-  // Haal het IP adres op uit de request headers
   const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
   console.log("Client IP:", clientIp);
 
@@ -44,6 +43,9 @@ app.post("/api/webhook-handler", (req, res) => {
   const timestamp = req.headers["x-samsara-timestamp"];
   const samsaraSignature = req.headers["x-samsara-signature"];
   const body = req.body;
+
+  console.log("Timestamp:", timestamp);
+  console.log("Received signature:", samsaraSignature);
 
   // Controleer de handtekening
   const isSignatureValid = verifySamsaraSignature(
@@ -69,7 +71,6 @@ app.post("/api/webhook-handler", (req, res) => {
     return res.status(400).send("Invalid JSON body");
   }
 
-  // Log de volledige body van het verzoek om te zien wat er precies binnenkomt
   console.log("Full request body:", parsedBody);
 
   // Filteren op basis van eventType (GeofenceEntry of GeofenceExit)
