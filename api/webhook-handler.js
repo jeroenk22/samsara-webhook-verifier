@@ -102,7 +102,7 @@ app.post("/api/webhook-handler", (req, res) => {
   // Filter op basis van eventType (GeofenceEntry of GeofenceExit)
   const allowedEventTypes = ["GeofenceEntry", "GeofenceExit"];
 
-  // Controleer of eventType bestaat voordat je trim() aanroept
+  // Controleer of eventType bestaat en valid is voordat je doorgaat
   const eventType = parsedBody.eventType ? parsedBody.eventType.trim() : "";
 
   // Log de waarde van eventType voor debugging
@@ -121,6 +121,7 @@ app.post("/api/webhook-handler", (req, res) => {
   // Log de actieve config-optie voor debugging
   let activeWebhookUrl = "";
   let responseData = "";
+
   if (config.webhookChoice === "make" || config.webhookChoice === "both") {
     activeWebhookUrl = makeWebhookUrl; // Zet Make Webhook URL
     console.log("Active webhook URL: Make.com", activeWebhookUrl);
