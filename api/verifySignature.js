@@ -1,29 +1,23 @@
 import { createHmac } from "crypto";
 
-// Functie om de handtekening te controleren
 export const verifySamsaraSignature = (
-  secret, // Gebruik de gedecodeerde secret buffer
+  secret,
   timestamp,
   body,
   samsaraSignature
 ) => {
-  // Bouw het bericht voor de handtekening
   const message = `v1:${timestamp}:${body}`;
-  console.log("Message to sign:", message); // Log het bericht dat je gaat ondertekenen
+  console.log("Message to sign:", message);
 
-  // Maak een HMAC aan met de geheime sleutel
   const hmac = createHmac("sha256", secret);
   hmac.update(message);
 
-  // Bereken de verwachte handtekening
   const expectedSignature = "v1=" + hmac.digest("hex");
-  console.log("Expected signature:", expectedSignature); // Log de verwachte handtekening
+  console.log("Expected signature:", expectedSignature);
+  console.log("Received signature:", samsaraSignature);
 
-  // Vergelijk de handtekeningen
   const isSignatureValid = expectedSignature === samsaraSignature;
-
-  console.log("Received signature:", samsaraSignature); // Log de ontvangen handtekening
-  console.log("Signature valid:", isSignatureValid); // Log het resultaat van de vergelijking
+  console.log("Signature valid:", isSignatureValid);
 
   return isSignatureValid;
 };

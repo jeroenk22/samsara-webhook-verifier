@@ -1,6 +1,5 @@
 import fetch from "node-fetch";
 
-// Verzend gegevens naar de IFTTT Webhook
 export const sendToIftttWebhook = (iftttWebhookUrl, data) => {
   return fetch(iftttWebhookUrl, {
     method: "POST",

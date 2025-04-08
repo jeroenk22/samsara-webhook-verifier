@@ -1,6 +1,5 @@
 import fetch from "node-fetch";
 
-// Verzend gegevens naar de Make.com Webhook
 export const sendToMakeWebhook = (makeWebhookUrl, data) => {
   return fetch(makeWebhookUrl, {
     method: "POST",
