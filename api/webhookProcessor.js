@@ -1,8 +1,7 @@
 import { sendToMakeWebhook } from "./makeWebhook.js";
 import { sendToIftttWebhook } from "./iftttWebhook.js";
 
-// Verwerk het event en stuur naar de juiste webhook(s)
-export const processWebhook = (
+export const processWebhook = async (
   config,
   eventType,
   parsedBody,
@@ -11,31 +10,25 @@ export const processWebhook = (
 ) => {
   let responseData = "";
 
-  // Verzend naar Make.com als de configuratie 'make' of 'both' is
-  if (config.webhookChoice === "make" || config.webhookChoice === "both") {
-    console.log("Sending data to Make.com webhook...");
-    sendToMakeWebhook(makeWebhookUrl, parsedBody)
-      .then((data) => {
-        responseData += `Make.com response: ${data}\n`;
-      })
-      .catch((error) => {
-        console.error("Error forwarding to Make.com:", error);
-        responseData += `Error forwarding to Make.com: ${error.message}\n`;
-      });
-  }
+  try {
+    if (config.webhookChoice === "make" || config.webhookChoice === "both") {
+      console.log("Sending data to Make.com webhook...");
+      const makeResponse = await sendToMakeWebhook(makeWebhookUrl, parsedBody);
+      responseData += `Make.com response: ${makeResponse}\n`;
+    }
 
-  // Verzend naar IFTTT als de configuratie 'ifttt' of 'both' is
-  if (config.webhookChoice === "ifttt" || config.webhookChoice === "both") {
-    console.log("Sending data to IFTTT webhook...");
-    sendToIftttWebhook(iftttWebhookUrl, parsedBody)
-      .then((data) => {
-        responseData += `IFTTT response: ${data}\n`;
-      })
-      .catch((error) => {
-        console.error("Error forwarding to IFTTT:", error);
-        responseData += `Error forwarding to IFTTT: ${error.message}\n`;
-      });
-  }
+    if (config.webhookChoice === "ifttt" || config.webhookChoice === "both") {
+      console.log("Sending data to IFTTT webhook...");
+      const iftttResponse = await sendToIftttWebhook(
+        iftttWebhookUrl,
+        parsedBody
+      );
+      responseData += `IFTTT response: ${iftttResponse}\n`;
+    }
 
-  return responseData;
+    return responseData;
+  } catch (error) {
+    console.error("Error processing webhooks:", error);
+    throw error;
+  }
 };

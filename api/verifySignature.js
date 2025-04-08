@@ -2,7 +2,7 @@ import { createHmac } from "crypto";
 
 // Functie om de handtekening te controleren
 export const verifySamsaraSignature = (
-  secret,
+  secret, // Gebruik de gedecodeerde secret buffer
   timestamp,
   body,
   samsaraSignature
