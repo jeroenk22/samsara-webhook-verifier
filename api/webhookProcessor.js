@@ -11,28 +11,41 @@ export const processWebhook = async (
   let responseData = "";
 
   try {
-    if (config.webhookChoice === "make") {
-      console.log("Sending data to Make.com webhook...");
-      const makeResponse = await sendToMakeWebhook(makeWebhookUrl, parsedBody);
-      responseData += `Make.com response: ${makeResponse}\n`;
-    } else if (config.webhookChoice === "ifttt") {
-      console.log("Sending data to IFTTT webhook...");
-      const iftttResponse = await sendToIftttWebhook(
-        iftttWebhookUrl,
-        parsedBody
-      );
-      responseData += `IFTTT response: ${iftttResponse}\n`;
-    } else if (config.webhookChoice === "both") {
-      console.log("Sending data to Make.com webhook...");
-      const makeResponse = await sendToMakeWebhook(makeWebhookUrl, parsedBody);
-      responseData += `Make.com response: ${makeResponse}\n`;
+    if (eventType === "GeofenceEntry" || eventType === "GeofenceExit") {
+      if (config.webhookChoice === "make") {
+        console.log("Sending data to Make.com webhook...");
+        const makeResponse = await sendToMakeWebhook(
+          makeWebhookUrl,
+          parsedBody
+        );
+        responseData += `Make.com response: ${makeResponse}\n`;
+      } else if (config.webhookChoice === "ifttt") {
+        console.log("Sending data to IFTTT webhook...");
+        const iftttResponse = await sendToIftttWebhook(
+          iftttWebhookUrl,
+          parsedBody
+        );
+        responseData += `IFTTT response: ${iftttResponse}\n`;
+      } else if (config.webhookChoice === "both") {
+        console.log("Sending data to Make.com webhook...");
+        const makeResponse = await sendToMakeWebhook(
+          makeWebhookUrl,
+          parsedBody
+        );
+        responseData += `Make.com response: ${makeResponse}\n`;
 
-      console.log("Sending data to IFTTT webhook...");
-      const iftttResponse = await sendToIftttWebhook(
-        iftttWebhookUrl,
-        parsedBody
+        console.log("Sending data to IFTTT webhook...");
+        const iftttResponse = await sendToIftttWebhook(
+          iftttWebhookUrl,
+          parsedBody
+        );
+        responseData += `IFTTT response: ${iftttResponse}\n`;
+      }
+    } else {
+      console.log(
+        `Skipping event, eventType is ${eventType}, which is neither GeofenceEntry nor GeofenceExit`
       );
-      responseData += `IFTTT response: ${iftttResponse}\n`;
+      return "Event skipped";
     }
 
     return responseData;
